@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatBot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            display: fixed;
+            margin-top: 1vh;
+            text-align: center;
+        }
+        #chat-box {
+            position: fixed;
+            left: 30vw;
+            top: 7vh;
+            font-size: 16px;
+        }
+        #chat-content {
+            width: 40vw;
+            height: 87vh;
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        #chat-messages {
+            height: 78vh;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #fafafa;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        #chat-input {
+            display: flex;
+            border-top: 1px solid #efefef;
+        }
+        #chat-input input {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            outline: none;
+        }
+        #chat-input button {
+            background-color: #007bff;
+            color: white;
+            padding: 0 20px;
+            border: none;
+            cursor: pointer;
+            height: 3vw;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 20px;
+            display: inline-block;
+            max-width: 80%;
+            text-align: right;
+            align-self: flex-end;
+        }
+        .received {
+            background-color: #efefef;
+            color: black;
+            text-align: left;
+            align-self: flex-start;
+        }
+    </style>
+</head>
+<body>
+    <h1>FAQ Chatbot</h1>
+    <div id="chat-box">
+        <div id="chat-content">
+            <div id="chat-messages"></div>
+            <div id="chat-input">
+                <input type="text" id="user-input" placeholder="Type your message...">
+                <button id="send-button">Send</button>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#send-button').click(function() {
+                sendMessage();
+            });
+
+            $('#user-input').keypress(function(e) {
+                if(e.which == 13) {
+                    sendMessage();
+                }
+            });
+
+            // Build message bubbles with .text() so user input and server replies
+            // are always shown as plain text, never interpreted as HTML.
+            function addMessage(text, received) {
+                var bubble = $('<div class="message"></div>').text(text);
+                if (received) bubble.addClass('received');
+                $('#chat-messages').append(bubble);
+                $('#chat-messages').scrollTop($('#chat-messages')[0].scrollHeight);
+            }
+
+            function sendMessage() {
+                var message = $('#user-input').val();
+                if(message.trim() != '') {
+                    addMessage(message, false);
+                    $('#user-input').val('');
+
+                    $.ajax({
+                        url: '/chatbot',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ message: message }),
+                        success: function(data) {
+                            addMessage(data.response || 'Sorry, I didn\'t get a reply. Please try again.', true);
+                        },
+                        error: function(xhr) {
+                            var detail = xhr.responseJSON && xhr.responseJSON.error;
+                            if (xhr.status === 0) {
+                                addMessage('Could not reach the server. Please check your connection and try again.', true);
+                            } else {
+                                addMessage('Sorry, something went wrong' + (detail ? ': ' + detail : '.') + ' Please try again.', true);
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
